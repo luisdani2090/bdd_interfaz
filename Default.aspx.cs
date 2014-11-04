@@ -7,6 +7,68 @@ using System.Web.UI.WebControls;
 
 public partial class _Default : System.Web.UI.Page
 {
+    // insert a register in a table based on a TextBox input
+    protected bool insert_row( string server, string tabla, TextBox text_box)
+    {
+        // Final result of the function
+        // true  => PASS
+        // false => FAIL
+        bool result = false;
+
+        // Get the name of the test
+        string TestName = text_box.Text;
+
+        // Define the contexts and rows
+        var context_server3 = new db_testsEntities_server3();
+        var context_server4 = new db_testsEntities_server4();
+        var server3_row = new server3_table_tests { TestName = TestName };
+        var server4_row = new server4_table_tests { TestName = TestName };
+
+        using (context_server3)
+        {
+            using (context_server4)
+            {
+                
+                try
+                {
+                    ///////////////////////////////////////////////////////////////////
+                    // This code allows you to insert a row in a table
+                    ///////////////////////////////////////////////////////////////////
+                    if ("server3" == server) 
+                    {
+                        context_server3.server3_table_tests.Add(server3_row);
+                        context_server3.SaveChanges();
+                    }
+                    else if ("server4" == server)
+                    {
+                        context_server4.server4_table_tests.Add(server4_row);
+                        context_server4.SaveChanges();
+                    }
+
+                    ///////////////////////////////////////////////////////////////////
+                    // This code allows you to select a View from you DataBase
+                    ///////////////////////////////////////////////////////////////////
+                    GridView1.DataSource = context_server4.view_table_tests.ToList();
+                    GridView1.DataBind();
+
+                    // Set result as 
+                    // true => PASS
+                    result = true;
+                }
+                catch (Exception exep)
+                {
+                    //Do nothing
+                    // Activate only for debug
+                    //Label5.Text = "Fail to insert: "+exep;
+                }            
+            }
+        }
+        // Return a result
+        // true  => PASS
+        // false => FAIL
+        return result;
+    }
+
     protected void Page_Load(object sender, EventArgs e)
     {
 
@@ -34,39 +96,59 @@ public partial class _Default : System.Web.UI.Page
             GridView1.DataBind();
         }
     }
+
+    // Insert a test to Server3
     protected void Button2_Click(object sender, EventArgs e)
     {
-        //We will insert a test to server3
-        // get the name of the test for server3
-        string TestNameServer3 = TextBox1.Text;
-        using (var context = new db_testsEntities_server3())
+        // The final result of the function
+        bool result = false;
+
+        // We will insert a test to server3
+        result = insert_row("server3", "server3_table_tests", TextBox1);
+        if (false == result)
         {
-            var test_row = new server3_table_tests { TestName = TestNameServer3 };
-            try { 
-                ///////////////////////////////////////////////////////////////////
-                // This code allows you to insert a row in a table
-                ///////////////////////////////////////////////////////////////////
-                context.server3_table_tests.Add(test_row);
-                context.SaveChanges();
-                Label1.Text = "Succeded";
-                Label5.Text = "";
-                using (var context_2 = new db_testsEntities_server4())
+            // To start seed IDENTITY from 1 again.
+            string string_connection = "Data Source=CCELIS-MOBL1\\SERVER3; Integrated Security=True";
+            System.Data.SqlClient.SqlConnection sqlConnection1 = new System.Data.SqlClient.SqlConnection(string_connection);
+            System.Data.SqlClient.SqlCommand cmd = new System.Data.SqlClient.SqlCommand();
+            System.Data.SqlClient.SqlDataReader reader;
+            cmd.CommandText = "DBCC CHECKIDENT('[db_tests].[dbo].[server3_table_tests]', RESEED, 0)";
+            cmd.CommandType = System.Data.CommandType.Text;
+            cmd.Connection = sqlConnection1;
+            sqlConnection1.Open();
+            reader = cmd.ExecuteReader();
+            sqlConnection1.Close();
+
+            // Try to insert 5 times to see if there is an available space.
+            for (int x = 0; x < 5; x++)
+            {
+                // If result is true then test was inserted, and we stop inserting.
+                if (true == result)
                 {
-                    ///////////////////////////////////////////////////////////////////
-                    // This code allows you to select a View from you DataBase
-                    ///////////////////////////////////////////////////////////////////
-                    GridView1.DataSource = context_2.view_table_tests.ToList();
-                    GridView1.DataBind();
+                    //Do nothing
+                }
+                else
+                {
+                    result = insert_row("server3", "server3_table_tests", TextBox1);
                 }
             }
-            catch (Exception exep) 
-            {
-                Label1.Text = "Failed";
-                Label5.Text = "Fail to insert: "+exep;
-            }
 
+            // If result is still false, then it means there is not enough sapce in this table.
+            if (false == result)
+            {
+                Label1.Text = "Failed, delete a test";
+            }
+            else
+            {
+                Label1.Text = "Succeded";
+            }
+        }
+        else
+        {
+            Label1.Text = "Succeded";
         }
     }
+
     protected void TextBox2_TextChanged(object sender, EventArgs e)
     {
 
@@ -107,40 +189,59 @@ public partial class _Default : System.Web.UI.Page
             }
         }
     }
+
+    // Insert test in server4
     protected void Button3_Click(object sender, EventArgs e)
     {
-        // insert test to server4
-        // get the name of the test for server4
-        string TestNameServer4 = TextBox2.Text;
-        using (var context = new db_testsEntities_server4())
+        // The final result of the function
+        bool result = false;
+
+        // We will insert a test to server4
+        result = insert_row("server4", "server4_table_tests", TextBox2);
+        if (false == result)
         {
-            var test_row = new server4_table_tests { TestName = TestNameServer4 };
-            try
+            // To start seed IDENTITY from 1 again.
+            string string_connection = "Data Source=CCELIS-MOBL1\\SERVER4; Integrated Security=True";
+            System.Data.SqlClient.SqlConnection sqlConnection1 = new System.Data.SqlClient.SqlConnection(string_connection);
+            System.Data.SqlClient.SqlCommand cmd = new System.Data.SqlClient.SqlCommand();
+            System.Data.SqlClient.SqlDataReader reader;
+            cmd.CommandText = "DBCC CHECKIDENT('[db_tests].[dbo].[server4_table_tests]', RESEED, 5)";
+            cmd.CommandType = System.Data.CommandType.Text;
+            cmd.Connection = sqlConnection1;
+            sqlConnection1.Open();
+            reader = cmd.ExecuteReader();
+            sqlConnection1.Close();
+
+            // Try to insert 5 times to see if there is an available space.
+            for (int x = 0; x < 5; x++)
             {
-                ///////////////////////////////////////////////////////////////////
-                // This code allows you to insert a row in a table
-                ///////////////////////////////////////////////////////////////////
-                context.server4_table_tests.Add(test_row);
-                context.SaveChanges();
-                Label3.Text = "Succeded";
-                Label5.Text = "";
-                using (var context_2 = new db_testsEntities_server4())
+                // If result is true then test was inserted, and we stop inserting.
+                if (true == result)
                 {
-                    ///////////////////////////////////////////////////////////////////
-                    // This code allows you to select a View from you DataBase
-                    ///////////////////////////////////////////////////////////////////
-                    GridView1.DataSource = context_2.view_table_tests.ToList();
-                    GridView1.DataBind();
+                    //Do nothing
+                }
+                else
+                {
+                    result = insert_row("server4", "server4_table_tests", TextBox2);
                 }
             }
-            catch (Exception exep)
-            {
-                Label3.Text = "Failed";
-                Label5.Text = "Fail to insert: " + exep;
-            }
 
+            // If result is still false, then it means there is not enough sapce in this table.
+            if (false == result)
+            {
+                Label3.Text = "Failed, delete a test";
+            }
+            else
+            {
+                Label3.Text = "Succeded";
+            }
+        }
+        else
+        {
+            Label3.Text = "Succeded";
         }
     }
+
     protected void Button4_Click(object sender, EventArgs e)
     {
         //Delete test on server4
